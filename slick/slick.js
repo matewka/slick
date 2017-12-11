@@ -1464,18 +1464,21 @@
         var _ = this;
 
         if (_.options.dots === true && _.slideCount > _.options.slidesToShow) {
-            $('li', _.$dots).addEventListener('click', _.changeSlide({message: 'index'}));
+            _.$dots.querySelectorAll('li')
+                .forEach((li) => li.addEventListener('click', _.changeSlide({message: 'index'})));
 
             if (_.options.accessibility === true) {
-                _.$dots.on('keydown', _.keyHandler);
+                _.$dots.addEventListener('keydown', _.keyHandler);
             }
         }
 
         if (_.options.dots === true && _.options.pauseOnDotsHover === true && _.slideCount > _.options.slidesToShow) {
 
-            $('li', _.$dots)
-                .on('mouseenter.slick', $.proxy(_.interrupt, _, true))
-                .on('mouseleave.slick', $.proxy(_.interrupt, _, false));
+            _.$dots.querySelectorAll('li')
+                .forEach((li) => {
+                    li.addEventListener('mouseenter', _.interrupt.bind(_, true));
+                    li.addEventListener('mouseleave', _.interrupt.bind(_, false));
+                });
 
         }
 
@@ -1487,8 +1490,8 @@
 
         if (_.options.pauseOnHover) {
 
-            _.$list.on('mouseenter.slick', $.proxy(_.interrupt, _, true));
-            _.$list.on('mouseleave.slick', $.proxy(_.interrupt, _, false));
+            _.$list.addEventListener('mouseenter', _.interrupt.bind(_, true));
+            _.$list.addEventListener('mouseleave', _.interrupt.bind(_, false));
 
         }
 
@@ -1503,40 +1506,38 @@
         _.initDotEvents();
         _.initSlideEvents();
 
-        _.$list.on('touchstart.slick mousedown.slick', {
-            action: 'start'
-        }, _.swipeHandler);
-        _.$list.on('touchmove.slick mousemove.slick', {
-            action: 'move'
-        }, _.swipeHandler);
-        _.$list.on('touchend.slick mouseup.slick', {
-            action: 'end'
-        }, _.swipeHandler);
-        _.$list.on('touchcancel.slick mouseleave.slick', {
-            action: 'end'
-        }, _.swipeHandler);
+        _.$list.addEventListener('touchstart', _.swipeHandler('start'));
+        _.$list.addEventListener('mousedown', _.swipeHandler('start'));
 
-        _.$list.on('click.slick', _.clickHandler);
+        _.$list.addEventListener('touchmove', _.swipeHandler('move'));
+        _.$list.addEventListener('mousemove', _.swipeHandler('move'));
 
-        $(document).on(_.visibilityChange, $.proxy(_.visibility, _));
+        _.$list.addEventListener('touchend', _.swipeHandler('end'));
+        _.$list.addEventListener('mouseup', _.swipeHandler('end'));
+
+        _.$list.addEventListener('touchcancel', _.swipeHandler('end'));
+        _.$list.addEventListener('mouseleave', _.swipeHandler('end'));
+
+        _.$list.addEventListener('click.slick', _.clickHandler);
+
+        document.addEventListener(_.visibilityChange, _.visibility.bind(_));
 
         if (_.options.accessibility === true) {
-            _.$list.on('keydown.slick', _.keyHandler);
+            _.$list.addEventListener('keydown', _.keyHandler);
         }
 
         if (_.options.focusOnSelect === true) {
-            $(_.$slideTrack).children().on('click.slick', _.selectHandler);
+            _.$slideTrack.children.forEach((child) => child.addEventListener('click', _.selectHandler));
         }
 
-        $(window).on('orientationchange.slick.slick-' + _.instanceUid, $.proxy(_.orientationChange, _));
+        window.addEventListener('orientationchange', _.orientationChange.bind(_));
 
-        $(window).on('resize.slick.slick-' + _.instanceUid, $.proxy(_.resize, _));
+        window.addEventListener('resize', _.resize.bind(_));
 
-        $('[draggable!=true]', _.$slideTrack).on('dragstart', _.preventDefault);
+        _.$slideTrack.querySelectorAll('[draggable!=true]')
+            .forEach((child) => child.addEventListener('dragstart', _.preventDefault));
 
-        $(window).on('load.slick.slick-' + _.instanceUid, _.setPosition);
-        $(_.setPosition);
-
+        window.addEventListener('load', _.setPosition);
     };
 
     Slick.prototype.initUI = function () {
@@ -2758,7 +2759,7 @@
 
     };
 
-    Slick.prototype.swipeHandler = function (event) {
+    Slick.prototype.swipeHandler = (action) => function (event) {
 
         var _ = this;
 
@@ -2768,8 +2769,8 @@
             return;
         }
 
-        _.touchObject.fingerCount = event.originalEvent && event.originalEvent.touches !== undefined ?
-            event.originalEvent.touches.length : 1;
+        _.touchObject.fingerCount = event.touches !== undefined ?
+            event.touches.length : 1;
 
         _.touchObject.minSwipe = _.listWidth / _.options
             .touchThreshold;
@@ -2779,7 +2780,7 @@
                 .touchThreshold;
         }
 
-        switch (event.data.action) {
+        switch (action) {
 
             case 'start':
                 _.swipeStart(event);
@@ -2804,7 +2805,7 @@
             curLeft, swipeDirection, swipeLength, positionOffset, touches,
             verticalSwipeLength;
 
-        touches = event.originalEvent !== undefined ? event.originalEvent.touches : null;
+        touches = event.touches;
 
         if (!_.dragging || _.scrolling || touches && touches.length !== 1) {
             return false;
@@ -2832,7 +2833,7 @@
 
         swipeDirection = _.swipeDirection();
 
-        if (event.originalEvent !== undefined && _.touchObject.swipeLength > 4) {
+        if (event && _.touchObject.swipeLength > 4) {
             _.swiping = true;
             event.preventDefault();
         }
@@ -2888,8 +2889,8 @@
             return false;
         }
 
-        if (event.originalEvent !== undefined && event.originalEvent.touches !== undefined) {
-            touches = event.originalEvent.touches[0];
+        if (event.touches !== undefined) {
+            touches = event.touches[0];
         }
 
         _.touchObject.startX = _.touchObject.curX = touches !== undefined ? touches.pageX : event.clientX;
